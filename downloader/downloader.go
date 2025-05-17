@@ -16,14 +16,14 @@ import (
 )
 
 type Downloader struct {
-	Urls       []string `json:urls`
-	TotalSize  int      `json:totalSize`
+	urls       []string
+	totalSize  int
 	reqObjs    []*http.Request
 	httpClient http.Client
 }
 
 func New(urls []string) Downloader {
-	d := Downloader{Urls: urls}
+	d := Downloader{urls: urls}
 	done := make(chan bool)
 	go showLoading("Getting total size", done)
 	d.populateReqObjects()
@@ -83,14 +83,12 @@ func (d *Downloader) jobStart(idx int, wg *sync.WaitGroup, bar *progressbar.Prog
 
 		bar.Add(n)
 	}
-
-	fmt.Printf("Downloaded %s to %s\n", idx, destination)
 	return nil
 }
 
 func (d *Downloader) StartDownload() {
 	var wg sync.WaitGroup
-	bar := progressbar.DefaultBytes(int64(d.TotalSize), "Downloading All Files")
+	bar := progressbar.DefaultBytes(int64(d.totalSize), "Downloading All Files")
 
 	for idx := range d.reqObjs {
 		wg.Add(1)
@@ -108,7 +106,7 @@ func (d *Downloader) StartDownload() {
 
 func (d *Downloader) populateReqObjects() {
 	d.httpClient = http.Client{}
-	for _, url := range d.Urls {
+	for _, url := range d.urls {
 		url = d.parseFF(url)
 		u := strings.TrimSuffix(url, "\r")
 		req, err := http.NewRequest("GET", u, nil)
@@ -130,7 +128,7 @@ func (d *Downloader) populateTotalSize() {
 		size += int(res.ContentLength)
 	}
 
-	d.TotalSize = size
+	d.totalSize = size
 }
 
 func (d *Downloader) parseFF(url string) string {
@@ -154,7 +152,7 @@ func (d *Downloader) parseFF(url string) string {
 	// Find the first match
 	match := re.FindStringSubmatch(bs)
 
-	if match != nil && len(match) > 1 {
+	if len(match) > 1 {
 		// Extract the URL (group 1)
 		result = match[1]
 		// fmt.Println("Extracted URL:", result)
