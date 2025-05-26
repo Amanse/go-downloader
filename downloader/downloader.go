@@ -48,12 +48,25 @@ func showLoading(text string, done chan bool) {
 	}
 }
 
+func extractFilename(contentDisposition string) (string, error) {
+	output := strings.Split(contentDisposition, "filename*=UTF-8''")
+	log.Println(output)
+	if len(output) > 0 {
+		return output[1], nil
+	}
+	return "", fmt.Errorf("File not available in ", contentDisposition)
+}
+
 func (d *Downloader) jobStart(idx int, wg *sync.WaitGroup, bar *progressbar.ProgressBar) error {
 	defer wg.Done()
-	destination := "file-" + strconv.Itoa(idx) + ".zip"
 	resp, err := d.httpClient.Do(d.reqObjs[idx])
 	if err != nil {
 		log.Fatal(err)
+	}
+	destination, err := extractFilename(resp.Header.Get("Content-Disposition"))
+	if err != nil {
+		log.Println("Couldn't get filename for ", idx)
+		destination = "file-" + strconv.Itoa(idx) + ".zip"
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
@@ -126,6 +139,7 @@ func (d *Downloader) populateTotalSize() {
 			log.Printf("Cannot do http req")
 		}
 		size += int(res.ContentLength)
+		log.Println("Name: %s", res.Header.Get("Content-Disposition"))
 	}
 
 	d.totalSize = size
