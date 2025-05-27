@@ -51,7 +51,7 @@ func showLoading(text string, done chan bool) {
 func extractFilename(contentDisposition string) (string, error) {
 	output := strings.Split(contentDisposition, "filename*=UTF-8''")
 	log.Println(output)
-	if len(output) > 0 {
+	if len(output) > 1 {
 		return output[1], nil
 	}
 	return "", fmt.Errorf("File not available in ", contentDisposition)
@@ -120,7 +120,6 @@ func (d *Downloader) StartDownload() {
 func (d *Downloader) populateReqObjects() {
 	d.httpClient = http.Client{}
 	for _, url := range d.urls {
-		url = d.parseFF(url)
 		u := strings.TrimSuffix(url, "\r")
 		req, err := http.NewRequest("GET", u, nil)
 		if err != nil {
